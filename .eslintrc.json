@@ -1,0 +1,22 @@
+{
+  "env": {
+      "browser": true,
+      "es2021": true
+  },
+  "extends": "standard-with-typescript",
+  "overrides": [
+  ],
+  "parserOptions": {
+      "project": "tsconfig.eslint.json",
+      "ecmaVersion": "latest",
+      "sourceType": "module"
+  },
+  "rules": {
+      "indent": [2, 2, { "SwitchCase": 1}],
+      "@typescript-eslint/strict-boolean-expressions": "warn",
+      "@typescript-eslint/prefer-nullish-coalescing": "warn",
+      "@typescript-eslint/no-invalid-void-type": 0,
+      "no-return-await": "off",
+      "@typescript-eslint/return-await": ["error", "in-try-catch"]
+  }
+}
