@@ -39,35 +39,6 @@ export class DestinyApiClient {
     }
   }
 
-  async getDestinyMembershipInfo (membershipId: string): Promise<any> {
-    try {
-      return await this.httpClient.get(
-        this.bungieDomain + `platform/User/GetMembershipsById/${membershipId}/3/`, {
-          headers: this.apiKeyHeader
-        })
-    } catch (error) {
-      logger.error(error)
-      throw new Error('Could not retreive Destiny membership information')
-    }
-  }
-
-  async getDestinyCharacterIds (destinyMembershipId: string): Promise<any> {
-    const getProfilesComponent = 100
-
-    try {
-      return await this.httpClient.get(
-        this.bungieDomainWithDestinyDirectory + this.profileDirectory + destinyMembershipId + '/', {
-          headers: this.apiKeyHeader,
-          params: {
-            components: getProfilesComponent
-          }
-        })
-    } catch (error) {
-      logger.error(error)
-      throw new Error('Could not retreive Destiny character ids')
-    }
-  }
-
   async getDestinyInventoryItemDefinition (): Promise<any> {
     try {
       const { data } = await this.httpClient.get(
@@ -104,24 +75,6 @@ export class DestinyApiClient {
     } catch (error) {
       logger.error(error)
       throw new Error('Could not retreive access token information')
-    }
-  }
-
-  async getDestinyUsername (bungieUsername: string, bungieUsernameCode: string): Promise<any> {
-    try {
-      return await this.httpClient.post(
-        this.bungieDomainWithDestinyDirectory + 'SearchDestinyPlayerByBungieName/3/', {
-          displayName: bungieUsername,
-          displayNameCode: bungieUsernameCode
-        }, {
-          headers: {
-            'content-type': 'application/json',
-            'x-api-key': this.config.apiKey
-          }
-        })
-    } catch (error) {
-      logger.error(error)
-      throw new Error('Could not retreive Destiny username')
     }
   }
 
