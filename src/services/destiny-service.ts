@@ -11,7 +11,7 @@ export class DestinyService {
   async getDestinyInventoryItemDefinition (): Promise<any> {
     const manifest = await this.destinyApiClient.getDestinyInventoryItemDefinition()
 
-    return manifest.DestinyInventoryItemDefinition
+    return manifest.data.DestinyInventoryItemDefinition
   }
 
   /**

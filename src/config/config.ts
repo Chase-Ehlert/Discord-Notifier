@@ -2,6 +2,7 @@ import 'dotenv/config.js'
 import joi from 'joi'
 import { DiscordConfig } from '../discord/configs/discord-config'
 import { DestinyApiClientConfig } from '../destiny/config/destiny-api-client-config'
+import { MongoDbServiceConfig } from '../services/config/mongo-db-service-config'
 
 interface Config {
   MONGO_URI?: string
@@ -74,6 +75,34 @@ class DiscordConfigClass implements DiscordConfig {
   }
 }
 
+class MongoDbServiceConfigClass implements MongoDbServiceConfig {
+  constructor (
+    public readonly mongoUri?: string,
+    public readonly databaseUser?: string,
+    public readonly databasePassword?: string,
+    public readonly databaseCluster?: string,
+    public readonly databaseName?: string
+  ) { }
+
+  static fromConfig ({
+    MONGO_URI: mongoUri,
+    DATABASE_USER: databaseUser,
+    DATABASE_PASSWORD: databasePassword,
+    DATABASE_CLUSTER: databaseCluster,
+    DATABASE_NAME: databaseName
+  }: Config): MongoDbServiceConfig {
+    return new MongoDbServiceConfigClass(
+      mongoUri ??
+      'mongodb+srv://' +
+      `${String(databaseUser)}:` +
+      `${String(databasePassword)}@` +
+      `${String(databaseCluster)}.mongodb.net/` +
+      String(databaseName)
+    )
+  }
+}
+
 export const DESTINY_API_CLIENT_CONFIG = DestinyApiClientConfigClass.fromConfig(value)
 export const DISCORD_CONFIG = DiscordConfigClass.fromConfig(value)
+export const MONGO_DB_SERVICE_CONFIG = MongoDbServiceConfigClass.fromConfig(value)
 export default value

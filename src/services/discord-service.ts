@@ -27,7 +27,7 @@ export class DiscordService {
   /**
    * Check the token expiration date and update it if it's expired
    */
-  private async checkRefreshTokenExpiration (user: UserInterface): Promise<void> {
+  async checkRefreshTokenExpiration (user: UserInterface): Promise<void> {
     const currentDate = new Date()
     const expirationDate = new Date(String(user.refreshExpiration))
     expirationDate.setDate(expirationDate.getDate() - 1)
@@ -45,7 +45,7 @@ export class DiscordService {
   /**
    * Check whether any mods for sale are owned by the user
    */
-  private async compareModsForSaleWithUserInventory (user: UserInterface): Promise<void> {
+  async compareModsForSaleWithUserInventory (user: UserInterface): Promise<void> {
     const discordEndpoint = `channels/${user.discordChannelId}/messages`
     const unownedModList = await this.vendor.getCollectiblesForSaleByAda(user)
 

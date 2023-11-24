@@ -1,3 +1,6 @@
 node_modules
 dist
 coverage
+.env
+manifest-items.json
+manifest-collectibles.json

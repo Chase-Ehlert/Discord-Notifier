@@ -20,7 +20,7 @@ describe('<ManifestService/>', () => {
   const manifestService = new ManifestService(destinyService)
 
   afterEach(() => {
-    jest.restoreAllMocks()
+    jest.resetAllMocks()
   })
 
   it('should instantiate', () => {
@@ -34,7 +34,7 @@ describe('<ManifestService/>', () => {
     const expectedManifest = '{ ' +
       '"item1": { "hash": "123", "itemType": 1, "collectibleHash": "456" }, ' +
       '"item2": { "hash": "321", "itemType": 1, "collectibleHash": "654" }' +
-    '}'
+      '}'
     const expectedItemNameList = ['456', '654']
     fs.promises.access = jest.fn().mockResolvedValue({})
     fs.promises.readFile = jest.fn().mockResolvedValue(expectedManifest)
