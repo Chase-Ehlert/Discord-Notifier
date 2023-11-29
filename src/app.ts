@@ -30,7 +30,7 @@ app.listen(3002, () => {
 app.post('/notify', (async (request, result) => {
   await discordService.checkRefreshTokenExpiration(request.body.user)
   await discordService.compareModsForSaleWithUserInventory(request.body.user)
-  result.status(200).send('complete')
+  result.status(200).send(String(request.body.user.bungieUsername) + ' notified')
 }) as express.RequestHandler)
 
 await mongoDbService.connectToDatabase()
