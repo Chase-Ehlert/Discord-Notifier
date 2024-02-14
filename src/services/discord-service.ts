@@ -15,16 +15,6 @@ export class DiscordService {
   ) { }
 
   /**
-   * Alert registered users about today's vendor inventory
-   */
-  async alertUsersOfUnownedModsForSale (): Promise<void> {
-    for await (const user of await this.database.fetchAllUsers()) {
-      await this.checkRefreshTokenExpiration(user)
-      await this.compareModsForSaleWithUserInventory(user)
-    }
-  }
-
-  /**
    * Check the token expiration date and update it if it's expired
    */
   async checkRefreshTokenExpiration (user: UserInterface): Promise<void> {

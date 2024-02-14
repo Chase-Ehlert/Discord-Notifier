@@ -21,24 +21,6 @@ export class DestinyApiClient {
     }
   }
 
-  async getRefreshTokenInfo (authorizationCode: string): Promise<any> {
-    try {
-      return await this.httpClient.post(
-        this.bungieDomainWithTokenDirectory,
-        {
-          grant_type: 'authorization_code',
-          code: authorizationCode,
-          client_secret: this.config.oauthSecret,
-          client_id: this.config.oauthClientId
-        }, {
-          headers: this.urlEncodedHeaders
-        })
-    } catch (error) {
-      logger.error(error)
-      throw new Error('Could not retreive refresh token information')
-    }
-  }
-
   async getDestinyInventoryItemDefinition (): Promise<any> {
     try {
       const { data } = await this.httpClient.get(

@@ -14,49 +14,6 @@ describe('<DestinyApiClient/>', () => {
   const config = DESTINY_API_CLIENT_CONFIG
   const destinyApiClient = new DestinyApiClient(axiosHttpClient, config)
 
-  it('should retrieve a users refresh token', async () => {
-    const expectedAuthCode = 'authCode'
-    const expectedMembershipId = '123'
-    const expectedRefreshExpiration = '456'
-    const expectedRefreshToken = '789'
-    const expectedRefreshTokenInfo = {
-      membership_id: expectedMembershipId,
-      refresh_expires_in: expectedRefreshExpiration,
-      refresh_token: expectedRefreshToken,
-      access_token: undefined
-    }
-    axiosHttpClient.post = jest.fn().mockResolvedValue({
-      membership_id: expectedMembershipId,
-      refresh_expires_in: expectedRefreshExpiration,
-      refresh_token: expectedRefreshToken
-    })
-
-    const value = await destinyApiClient.getRefreshTokenInfo(expectedAuthCode)
-
-    expect(axiosHttpClient.post).toHaveBeenCalledWith(
-      'https://www.bungie.net/platform/app/oauth/token/',
-      {
-        grant_type: 'authorization_code',
-        code: expectedAuthCode,
-        client_secret: config.oauthSecret,
-        client_id: config.oauthClientId
-      },
-      {
-        headers: {
-          'content-type': 'application/x-www-form-urlencoded',
-          'x-api-key': config.apiKey
-        }
-      }
-    )
-    expect(value).toEqual(expectedRefreshTokenInfo)
-  })
-
-  it('should catch an error in getRefreshTokenInfo if one occurs when making a http call', async () => {
-    axiosHttpClient.post = jest.fn().mockRejectedValue(Error)
-
-    await expect(async () => destinyApiClient.getRefreshTokenInfo('1')).rejects.toThrow(Error)
-  })
-
   it('should retrieve a list of definitions for Destiny items from a specific manifest file', async () => {
     const expectedManifestFileName = 'manifest'
     const manifest = {
