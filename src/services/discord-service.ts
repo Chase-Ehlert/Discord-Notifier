@@ -12,7 +12,7 @@ export class DiscordService {
     private readonly database: UserRepository,
     private readonly httpClient: HttpClient,
     private readonly config: DiscordConfig
-  ) { }
+  ) {}
 
   /**
    * Check the token expiration date and update it if it's expired
@@ -23,7 +23,9 @@ export class DiscordService {
     expirationDate.setDate(expirationDate.getDate() - 1)
 
     if (currentDate.getTime() > expirationDate.getTime()) {
-      const tokenInfo = await this.destinyService.getAccessToken(user.refreshToken)
+      const tokenInfo = await this.destinyService.getAccessToken(
+        user.refreshToken
+      )
       await this.database.updateUserByMembershipId(
         tokenInfo.bungieMembershipId,
         tokenInfo.refreshTokenExpirationTime,
@@ -35,12 +37,18 @@ export class DiscordService {
   /**
    * Check whether any mods for sale are owned by the user
    */
-  async compareModsForSaleWithUserInventory (user: UserInterface): Promise<void> {
+  async compareModsForSaleWithUserInventory (
+    user: UserInterface
+  ): Promise<void> {
     const discordEndpoint = `channels/${user.discordChannelId}/messages`
     const unownedModList = await this.vendor.getCollectiblesForSaleByAda(user)
 
     if (unownedModList.length > 0) {
-      await this.messageUnownedModsList(discordEndpoint, user.discordId, unownedModList)
+      await this.messageUnownedModsList(
+        discordEndpoint,
+        user.discordId,
+        unownedModList
+      )
     } else {
       await this.messageEmptyModsList(discordEndpoint, user.bungieUsername)
     }
@@ -56,7 +64,7 @@ export class DiscordService {
   ): Promise<void> {
     let message = `<@${discordId}>\r\nYou have these unowned mods for sale, grab them!`
 
-    unownedModList.forEach(mod => {
+    unownedModList.forEach((mod) => {
       message = message + `\r\n${mod}`
     })
 
@@ -66,7 +74,10 @@ export class DiscordService {
   /**
    * Send update message for no alert required
    */
-  private async messageEmptyModsList (discordEndpoint: string, username: string): Promise<void> {
+  private async messageEmptyModsList (
+    discordEndpoint: string,
+    username: string
+  ): Promise<void> {
     const message = `${username} does not have any unowned mods for sale today.`
 
     await this.discordRequest(discordEndpoint, message)
@@ -75,8 +86,12 @@ export class DiscordService {
   /**
    * Send off message to user's desired Discord alert channel
    */
-  private async discordRequest (endpoint: string, message: string): Promise<void> {
-    const result = await this.httpClient.post('https://discord.com/api/v10/' + endpoint,
+  private async discordRequest (
+    endpoint: string,
+    message: string
+  ): Promise<void> {
+    const result = await this.httpClient.post(
+      'https://discord.com/api/v10/' + endpoint,
       {
         content: message
       },
