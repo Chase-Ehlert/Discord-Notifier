@@ -1,38 +1,14 @@
 import { Vendor } from '../destiny/vendor.js'
-import { DestinyService } from './destiny-service.js'
 import { UserInterface } from '../database/models/user.js'
-import { UserRepository } from '../database/user-repository.js'
 import { HttpClient } from '../utility/http-client.js'
 import { DiscordConfig } from '../discord/configs/discord-config.js'
 
 export class DiscordService {
   constructor (
     private readonly vendor: Vendor,
-    private readonly destinyService: DestinyService,
-    private readonly database: UserRepository,
     private readonly httpClient: HttpClient,
     private readonly config: DiscordConfig
   ) {}
-
-  /**
-   * Check the token expiration date and update it if it's expired
-   */
-  async checkRefreshTokenExpiration (user: UserInterface): Promise<void> {
-    const currentDate = new Date()
-    const expirationDate = new Date(String(user.refreshExpiration))
-    expirationDate.setDate(expirationDate.getDate() - 1)
-
-    if (currentDate.getTime() > expirationDate.getTime()) {
-      const tokenInfo = await this.destinyService.getAccessToken(
-        user.refreshToken
-      )
-      await this.database.updateUserByMembershipId(
-        tokenInfo.bungieMembershipId,
-        tokenInfo.refreshTokenExpirationTime,
-        tokenInfo.refreshToken
-      )
-    }
-  }
 
   /**
    * Check whether any mods for sale are owned by the user
@@ -41,13 +17,13 @@ export class DiscordService {
     user: UserInterface
   ): Promise<void> {
     const discordEndpoint = `channels/${user.discordChannelId}/messages`
-    const unownedModList = await this.vendor.getCollectiblesForSaleByAda(user)
+    const unownedMods = await this.vendor.getUnownedModsForSaleByAda(user)
 
-    if (unownedModList.length > 0) {
+    if (unownedMods.length > 0) {
       await this.messageUnownedModsList(
         discordEndpoint,
         user.discordId,
-        unownedModList
+        unownedMods
       )
     } else {
       await this.messageEmptyModsList(discordEndpoint, user.bungieUsername)
