@@ -27,24 +27,13 @@ export class Vendor {
   }
 
   /**
-   * Collect mods for sale by Ada
+   * Collect mod info of merchandise for sale by Ada
    */
   private async getModsForSaleByAda (user: UserInterface): Promise<Mod[]> {
-    let adaMerchandise
-    const adaVendorId = '350061650'
-
     try {
-      const vendorMerchandise = await this.destinyService.getVendorInfo(user)
+      const adaMerchandise = await this.destinyService.getAdaMerchandise(user)
 
-      for (const vendorId in vendorMerchandise) {
-        if (vendorId === adaVendorId) {
-          adaMerchandise = vendorMerchandise[vendorId].saleItems
-        }
-      }
-
-      const adaMerchandiseItemHashes: Mod[] = Object.values(adaMerchandise).map((item: Mod) => (new Mod(item.itemHash)))
-
-      return await this.manifestService.getModInfoFromManifest(adaMerchandiseItemHashes)
+      return await this.manifestService.getModInfoFromManifest(adaMerchandise)
     } catch (error) {
       logger.error(error)
       throw new Error('Problem with retreiving vendor mod inventory')

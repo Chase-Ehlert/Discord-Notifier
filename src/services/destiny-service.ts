@@ -1,6 +1,7 @@
 import { UserInterface } from '../database/models/user.js'
 import { DestinyApiClient } from '../destiny/destiny-api-client.js'
 import { Collectible } from './models/collectible.js'
+import { Mod } from './models/mod.js'
 
 export class DestinyService {
   constructor (private readonly destinyApiClient: DestinyApiClient) { }
@@ -15,16 +16,24 @@ export class DestinyService {
   }
 
   /**
-     * Retrieves the list of vendors and their inventory
+     * Retrieves the merchandise sold by Ada
      */
-  async getVendorInfo (user: UserInterface): Promise<any> {
+  async getAdaMerchandise (user: UserInterface): Promise<Mod[]> {
+    let adaMerchandise
+    const adaVendorId = '350061650'
     const { data } = await this.destinyApiClient.getVendorInfo(
       user.destinyId,
       user.destinyCharacterId,
       user.refreshToken
     )
 
-    return data.Response.sales.data
+    for (const vendorId in data.Response.sales.data) {
+      if (vendorId === adaVendorId) {
+        adaMerchandise = data.Response.sales.data[vendorId].saleItems
+      }
+    }
+
+    return Object.values(adaMerchandise).map((item: Mod) => (new Mod(item.itemHash)))
   }
 
   /**
