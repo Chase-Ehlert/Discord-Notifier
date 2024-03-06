@@ -112,6 +112,20 @@ export class DestinyApiClient {
     }
   }
 
+  /**
+     * Retrieve the user's access token by calling the Destiny API with their refresh token
+     */
+  private async getAccessToken (refreshToken: string): Promise<TokenInfo> {
+    const { data } = await this.getAccessTokenInfo(refreshToken)
+
+    return new TokenInfo(
+      data.membership_id,
+      data.refresh_expires_in,
+      data.refresh_token,
+      data.access_token
+    )
+  }
+
   private async getAccessTokenInfo (refreshToken: string): Promise<any> {
     try {
       return await this.httpClient.post(
@@ -127,19 +141,5 @@ export class DestinyApiClient {
       logger.error(error)
       throw new Error('Could not retreive access token information')
     }
-  }
-
-  /**
-     * Retrieve the user's access token by calling the Destiny API with their refresh token
-     */
-  private async getAccessToken (refreshToken: string): Promise<TokenInfo> {
-    const { data } = await this.getAccessTokenInfo(refreshToken)
-
-    return new TokenInfo(
-      data.membership_id,
-      data.refresh_expires_in,
-      data.refresh_token,
-      data.access_token
-    )
   }
 }
