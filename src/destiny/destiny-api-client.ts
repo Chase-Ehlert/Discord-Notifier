@@ -32,7 +32,6 @@ export class DestinyApiClient {
           headers: this.apiKeyHeader
         })
       const manifestFileName: string = data.Response.jsonWorldContentPaths.en
-
       try {
         const response = await this.httpClient.get(this.bungieDomain + manifestFileName)
         return response.data.DestinyInventoryItemDefinition
