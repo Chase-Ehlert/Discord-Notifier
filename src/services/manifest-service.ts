@@ -1,8 +1,8 @@
-import { DestinyService } from './destiny-service.js'
+import { DestinyApiClient } from '../destiny/destiny-api-client.js'
 import { Mod } from './models/mod.js'
 
 export class ManifestService {
-  constructor (private readonly destinyService: DestinyService) { }
+  constructor (private readonly destinyApiClient: DestinyApiClient) { }
 
   /**
    * Collect info (name and hashId) of mods from the manifest
@@ -22,7 +22,7 @@ export class ManifestService {
   }
 
   private async getDestinyInventoryModDescriptions (): Promise<Map<string, string>> {
-    const destinyInventoryItemDefinition = await this.destinyService.getDestinyInventoryItemDefinition()
+    const destinyInventoryItemDefinition = await this.destinyApiClient.getDestinyInventoryItemDefinition()
     const filteredInventory = Object.values(destinyInventoryItemDefinition).filter((item: Partial<Mod>) => {
       return (JSON.stringify(item.itemType) === '19') &&
       (Boolean(Object.prototype.hasOwnProperty.call(item, 'hash')))

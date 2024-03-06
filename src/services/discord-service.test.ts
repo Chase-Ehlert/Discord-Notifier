@@ -12,16 +12,16 @@ jest.mock('./../utility/url', () => {
 })
 
 describe('<DiscordService/>', () => {
-  const axiosHttpClient = new AxiosHttpClient()
-  const config = DISCORD_CONFIG
-  const destinyService = new DestinyService(
-    new DestinyApiClient(new AxiosHttpClient(), DESTINY_API_CLIENT_CONFIG, new MongoUserRepository())
+  const destinyApiClient = new DestinyApiClient(
+    new AxiosHttpClient(),
+    new MongoUserRepository(),
+    DESTINY_API_CLIENT_CONFIG
   )
   const vendor = new Vendor(
-    destinyService,
-    new ManifestService(destinyService)
+    new DestinyService(destinyApiClient),
+    new ManifestService(destinyApiClient)
   )
-  const discordService = new DiscordService(vendor, axiosHttpClient, config)
+  const discordService = new DiscordService(vendor, new AxiosHttpClient(), DISCORD_CONFIG)
 
   it('should instantiate', () => {
     expect(discordService).not.toBeNull()

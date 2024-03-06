@@ -12,13 +12,12 @@ import { MongoDbService } from './services/mongo-db-service.js'
 
 const destinyApiClient = new DestinyApiClient(
   new AxiosHttpClient(),
-  DESTINY_API_CLIENT_CONFIG,
-  new MongoUserRepository()
+  new MongoUserRepository(),
+  DESTINY_API_CLIENT_CONFIG
 )
-const destinyService = new DestinyService(destinyApiClient)
 const mongoDbService = new MongoDbService(MONGO_DB_SERVICE_CONFIG)
 const discordService = new DiscordService(
-  new Vendor(destinyService, new ManifestService(destinyService)),
+  new Vendor(new DestinyService(destinyApiClient), new ManifestService(destinyApiClient)),
   new AxiosHttpClient(),
   DISCORD_CONFIG
 )

@@ -13,7 +13,7 @@ jest.mock('./../utility/logger', () => {
 describe('<DestinyApiClient/>', () => {
   const axiosHttpClient = new AxiosHttpClient()
   const config = DESTINY_API_CLIENT_CONFIG
-  const destinyApiClient = new DestinyApiClient(axiosHttpClient, config, new MongoUserRepository())
+  const destinyApiClient = new DestinyApiClient(axiosHttpClient, new MongoUserRepository(), config)
 
   it('should retrieve a list of definitions for Destiny items from a specific manifest file', async () => {
     const expectedManifestFileName = 'manifest'

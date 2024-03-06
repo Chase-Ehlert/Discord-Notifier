@@ -7,15 +7,6 @@ export class DestinyService {
   constructor (private readonly destinyApiClient: DestinyApiClient) { }
 
   /**
-     * Retrieves the list of definitions of Destiny items for a specified manifest file
-     */
-  async getDestinyInventoryItemDefinition (): Promise<any> {
-    const manifest = await this.destinyApiClient.getDestinyInventoryItemDefinition()
-
-    return manifest.data.DestinyInventoryItemDefinition
-  }
-
-  /**
      * Retrieves the merchandise sold by Ada
      */
   async getAdaMerchandise (user: UserInterface): Promise<Mod[]> {

@@ -15,8 +15,8 @@ export class DestinyApiClient {
 
   constructor (
     private readonly httpClient: HttpClient,
-    private readonly config: DestinyApiClientConfig,
-    private readonly database: UserRepository
+    private readonly database: UserRepository,
+    private readonly config: DestinyApiClientConfig
   ) {
     this.apiKeyHeader = { 'x-api-key': this.config.apiKey }
     this.urlEncodedHeaders = {
@@ -34,9 +34,8 @@ export class DestinyApiClient {
       const manifestFileName: string = data.Response.jsonWorldContentPaths.en
 
       try {
-        return await this.httpClient.get(
-          this.bungieDomain + manifestFileName
-        )
+        const response = await this.httpClient.get(this.bungieDomain + manifestFileName)
+        return response.data.DestinyInventoryItemDefinition
       } catch (error) {
         logger.error(error)
         throw new Error('Could not retreive Destiny inventory item definition')

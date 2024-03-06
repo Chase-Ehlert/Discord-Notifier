@@ -13,11 +13,8 @@ jest.mock('./../utility/url', () => {
 })
 
 describe('<Vendor/>', () => {
-  const destinyService = new DestinyService(
-    new DestinyApiClient(new AxiosHttpClient(), DESTINY_API_CLIENT_CONFIG, new MongoUserRepository())
-  )
-  const manifestService = new ManifestService(destinyService)
-  const vendor = new Vendor(destinyService, manifestService)
+  const destinyApiClient = new DestinyApiClient(new AxiosHttpClient(), new MongoUserRepository(), DESTINY_API_CLIENT_CONFIG)
+  const vendor = new Vendor(new DestinyService(destinyApiClient), new ManifestService(destinyApiClient))
   const user = {
     bungieUsername: 'name',
     bungieUsernameCode: 'code',
