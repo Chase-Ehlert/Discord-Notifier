@@ -4,10 +4,8 @@ import { DestinyService } from '../services/destiny-service'
 import { ManifestService } from '../services/manifest-service'
 import { Vendor } from './vendor'
 import { DestinyApiClient } from './destiny-api-client'
-import logger from '../utility/logger'
 import { AxiosHttpClient } from '../utility/axios-http-client'
 import { DESTINY_API_CLIENT_CONFIG } from '../config/config'
-import { TokenInfo } from '../services/models/token-info'
 import { Mod } from '../services/models/mod'
 
 jest.mock('./../utility/url', () => {

@@ -2,8 +2,8 @@ import { DESTINY_API_CLIENT_CONFIG } from '../config/config'
 import { MongoUserRepository } from '../database/mongo-user-repository'
 import { DestinyApiClient } from '../destiny/destiny-api-client'
 import { AxiosHttpClient } from '../utility/axios-http-client'
-import { DestinyService } from './destiny-service'
 import { ManifestService } from './manifest-service'
+import { Mod } from './models/mod'
 
 jest.mock('./../utility/url', () => {
   return 'example'
@@ -17,7 +17,6 @@ jest.mock('./../utility/logger', () => {
 
 describe('<ManifestService/>', () => {
   const destinyApiClient = new DestinyApiClient(new AxiosHttpClient(), new MongoUserRepository(), DESTINY_API_CLIENT_CONFIG)
-  const destinyService = new DestinyService(destinyApiClient)
   const manifestService = new ManifestService(destinyApiClient)
 
   afterEach(() => {
@@ -28,82 +27,23 @@ describe('<ManifestService/>', () => {
     expect(manifestService).not.toBeNull()
   })
 
-  // it('should return a list of item names from the read manifest', async () => {
-  //   const getDestinyInventoryItemDefinitionMock =
-  //     jest.spyOn(destinyService, 'getDestinyInventoryItemDefinition').mockResolvedValue({})
-  //   const itemList = { item1: { itemHash: '123' }, item2: { itemHash: '321' } }
-  //   const expectedManifest = '{ ' +
-  //     '"item1": { "hash": "123", "itemType": 1, "collectibleHash": "456" }, ' +
-  //     '"item2": { "hash": "321", "itemType": 1, "collectibleHash": "654" }' +
-  //     '}'
-  //   const expectedItemNameList = ['456', '654']
-  //   fs.promises.access = jest.fn().mockResolvedValue({})
-  //   fs.promises.readFile = jest.fn().mockResolvedValue(expectedManifest)
+  it('should return a list of mods with their info from the manifest', async () => {
+    const itemHash1 = '123'
+    const itemHash2 = '321'
+    const itemName1 = 'Gloves of Hercules'
+    const itemName2 = 'Glasses of Zeron'
+    const expectedManifest = {
+      item1: { hash: itemHash1, itemType: 19, displayProperties: { name: itemName1 } },
+      item2: { hash: itemHash2, itemType: 19, displayProperties: { name: itemName2 } }
+    }
+    const getDestinyInventoryItemDefinitionMock =
+      jest.spyOn(destinyApiClient, 'getDestinyInventoryItemDefinition').mockResolvedValue(expectedManifest)
+    const itemHashes = [new Mod(itemHash1), new Mod(itemHash2)]
+    const expectedItemNameList = [new Mod(itemHash1, itemName1), new Mod(itemHash2, itemName2)]
 
-  //   const result = await manifestService.getItemsFromManifest(1, itemList)
+    const result = await manifestService.getModInfoFromManifest(itemHashes)
 
-  //   expect(getDestinyInventoryItemDefinitionMock).toHaveBeenCalled()
-  //   expect(fs.promises.readFile).toHaveBeenCalledWith('manifest-items.json')
-  //   expect(result).toEqual(expectedItemNameList)
-  // })
-
-  // it('should return a list of item names from the written manifest', async () => {
-  //   const expectedManifest = {
-  //     item1: { hash: 123, itemType: 1, collectibleHash: 456 },
-  //     item2: { hash: 321, itemType: 1, collectibleHash: 654 }
-  //   }
-  //   const itemList = { item1: { itemHash: 123 }, item2: { itemHash: 321 } }
-  //   const expectedItemNameList = [456, 654]
-
-  //   jest.spyOn(destinyService, 'getDestinyInventoryItemDefinition').mockResolvedValue(expectedManifest)
-  //   fs.promises.access = jest.fn().mockRejectedValue(Error)
-  //   fs.promises.writeFile = jest.fn().mockResolvedValue({})
-
-  //   const result = await manifestService.getItemsFromManifest(1, itemList)
-
-  //   expect(fs.promises.writeFile).toHaveBeenCalledWith('manifest-items.json', JSON.stringify(expectedManifest))
-  //   expect(result).toEqual(expectedItemNameList)
-  // })
-
-  // it('should catch an error thrown when attempting to write the manifest', async () => {
-  //   jest.spyOn(destinyService, 'getDestinyInventoryItemDefinition').mockResolvedValue({})
-  //   fs.promises.access = jest.fn().mockRejectedValue(Error)
-  //   fs.promises.writeFile = jest.fn().mockRejectedValue(Error)
-
-  //   await expect(async () => manifestService.getItemsFromManifest(1, {})).rejects.toThrow(Error)
-  // })
-
-  // it('should return a list of collectibles from the read manifest', async () => {
-  //   const expectedManifest = {
-  //     item1: { displayProperties: { name: 'item1' } },
-  //     item2: { displayProperties: { name: 'item2' } }
-  //   }
-  //   const itemList = { item1: { itemHash: 123 }, item2: { itemHash: 321 } }
-
-  //   jest.spyOn(destinyService, 'getDestinyInventoryItemDefinition').mockResolvedValue(expectedManifest)
-  //   fs.promises.access = jest.fn().mockResolvedValue({})
-  //   fs.promises.readFile = jest.fn().mockResolvedValue(expectedManifest)
-
-  //   const result = await manifestService.getCollectiblesFromManifest(1, itemList)
-
-  //   expect(fs.promises.readFile).toHaveBeenCalledWith('manifest-collectibles.json')
-  //   expect(result).toEqual(['item1', 'item2'])
-  // })
-
-  // it('should return a list of collectibles from the written manifest', async () => {
-  //   const expectedManifest = {
-  //     item1: { displayProperties: { name: 'item1' } },
-  //     item2: { displayProperties: { name: 'item2' } }
-  //   }
-  //   const itemList = { item1: { itemHash: 123 }, item2: { itemHash: 321 } }
-
-  //   jest.spyOn(destinyService, 'getDestinyInventoryItemDefinition').mockResolvedValue(expectedManifest)
-  //   fs.promises.access = jest.fn().mockRejectedValue(Error)
-  //   fs.promises.writeFile = jest.fn().mockResolvedValue({})
-
-  //   const result = await manifestService.getCollectiblesFromManifest(1, itemList)
-
-  //   expect(fs.promises.writeFile).toHaveBeenCalledWith('manifest-collectibles.json', JSON.stringify(expectedManifest))
-  //   expect(result).toEqual(['item1', 'item2'])
-  // })
+    expect(getDestinyInventoryItemDefinitionMock).toHaveBeenCalled()
+    expect(result).toEqual(expectedItemNameList)
+  })
 })
