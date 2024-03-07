@@ -10,12 +10,14 @@ import { ManifestService } from './services/manifest-service.js'
 import { DestinyApiClient } from './destiny/destiny-api-client.js'
 import { MongoDbService } from './services/mongo-db-service.js'
 
-const destinyService = new DestinyService(new DestinyApiClient(new AxiosHttpClient(), DESTINY_API_CLIENT_CONFIG))
+const destinyApiClient = new DestinyApiClient(
+  new AxiosHttpClient(),
+  new MongoUserRepository(),
+  DESTINY_API_CLIENT_CONFIG
+)
 const mongoDbService = new MongoDbService(MONGO_DB_SERVICE_CONFIG)
 const discordService = new DiscordService(
-  new Vendor(destinyService, new MongoUserRepository(), new ManifestService(destinyService)),
-  destinyService,
-  new MongoUserRepository(),
+  new Vendor(new DestinyService(destinyApiClient), new ManifestService(destinyApiClient)),
   new AxiosHttpClient(),
   DISCORD_CONFIG
 )
@@ -28,7 +30,7 @@ app.listen(3002, () => {
 })
 
 app.post('/notify', (async (request, result) => {
-  await discordService.checkRefreshTokenExpiration(request.body.user)
+  await destinyApiClient.checkRefreshTokenExpiration(request.body.user)
   await discordService.compareModsForSaleWithUserInventory(request.body.user)
   result.status(200).send(String(request.body.user.bungieUsername) + ' notified')
 }) as express.RequestHandler)

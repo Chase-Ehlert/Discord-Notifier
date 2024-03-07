@@ -1,164 +1,40 @@
-import * as fs from 'fs'
-import { DestinyService } from './destiny-service.js'
-import logger from '../utility/logger.js'
+import { DestinyApiClient } from '../destiny/destiny-api-client.js'
+import { Mod } from './models/mod.js'
 
 export class ManifestService {
-  private readonly fsPromises = fs.promises
-
-  constructor (private readonly destinyService: DestinyService) { }
+  constructor (private readonly destinyApiClient: DestinyApiClient) { }
 
   /**
-   * Collect names of mods for sale from the manifest
+   * Collect info (name and hashId) of mods from the manifest
    */
-  async getItemsFromManifest (itemType: number, itemList: Object): Promise<string[]> {
-    const destinyInventoryItemDefinition = await this.destinyService.getDestinyInventoryItemDefinition()
-
-    return this.readItemsFromManifest(
-      itemType,
-      itemList,
-      destinyInventoryItemDefinition
-    )
-  }
-
-  /**
-   * Compile list of mod names from manifest or create the manifest and then compile the list
-   */
-  private async readItemsFromManifest (
-    itemType: number,
-    itemList: Object,
-    destinyInventoryItemDefinition: Object
-  ): Promise<string[]> {
-    try {
-      await this.fsPromises.access('manifest-items.json', fs.constants.F_OK)
-      return await this.readFile(itemType, 'manifest-items.json', itemList, false)
-    } catch (error) {
-      return await this.writeFile(itemType, 'manifest-items.json', destinyInventoryItemDefinition, itemList, false)
-    }
-  }
-
-  /**
-   * Get the manifest file and read the list of collectibles from it
-   */
-  async getCollectiblesFromManifest (itemType: number, itemList: Object): Promise<string[]> {
-    const newData = await this.destinyService.getDestinyInventoryItemDefinition()
-
-    return this.readCollectiblesFromManifest(itemType, itemList, newData)
-  }
-
-  /**
-   * Compile list of collectibles from Destiny's manifest or create the manifest and then compile the list
-   */
-  private async readCollectiblesFromManifest (itemType: number, itemList: Object, data: any): Promise<string[]> {
-    try {
-      await this.fsPromises.access('manifest-collectibles.json', fs.constants.F_OK)
-      return await this.readFile(
-        itemType,
-        'manifest-collectibles.json',
-        itemList,
-        true
-      )
-    } catch (error) {
-      return await this.writeFile(
-        itemType,
-        'manifest-collectibles.json',
-        data,
-        itemList,
-        true
-      )
-    }
-  }
-
-  /**
-   * Read manifest file for a list of names of collectibles or items
-   */
-  private async readFile (itemType: number, fileName: string, itemList: Object, collectible: boolean): Promise<string[]> {
-    try {
-      const fileContents = await this.fsPromises.readFile(fileName)
-      if (collectible) {
-        return this.getCollectibleNames(itemList, JSON.parse(String(fileContents)))
-      } else {
-        return this.getItemNames(itemType, itemList, JSON.parse(String(fileContents)))
+  async getModInfoFromManifest (itemHashes: Mod[]): Promise<Mod[]> {
+    const destinyInventoryModDescriptions = await this.getDestinyInventoryModDescriptions()
+    const unownedMods = itemHashes.filter(item => destinyInventoryModDescriptions.has(item.itemHash))
+    const unownedModInfo = unownedMods.map(item => {
+      const modName = destinyInventoryModDescriptions.get(item.itemHash)
+      if (modName !== undefined) {
+        return new Mod(item.itemHash, modName)
       }
-    } catch (error) {
-      logger.error(error)
-      throw new Error('Problem with reading file')
-    }
-  }
-
-  /**
-   * Write manifest file and then read it for a list of names of collectibles or items
-   */
-  private async writeFile (itemType: number, fileName: string, manifestData: Object, itemList: Object, collectible: boolean): Promise<string[]> {
-    try {
-      await this.fsPromises.writeFile(fileName, JSON.stringify(manifestData))
-    } catch (error) {
-      logger.error(error)
-      throw new Error('Problem with writing file')
-    }
-
-    if (collectible) {
-      return this.getCollectibleNames(itemList, manifestData)
-    } else {
-      return this.getItemNames(itemType, itemList, manifestData)
-    }
-  }
-
-  /**
-   * Compile list of names for items on sale
-   */
-  private getItemNames (itemType: number, itemList: Object, manifest: any): string[] {
-    const manifestKeys = Object.keys(manifest)
-    const itemListValues = Object.values(itemList)
-    const itemHashList: string[] = []
-    const itemNameList = []
-
-    itemListValues.forEach(item => {
-      itemHashList.push(Object(item).itemHash)
     })
+    const legitmateUnownedModInfo = unownedModInfo.filter((item): item is Mod => item !== undefined)
 
-    for (let i = 0; i < manifestKeys.length; i++) {
-      if (this.canManifestItemBeAdded(itemType, itemHashList, manifest, manifestKeys, i, itemNameList) &&
-        manifest[manifestKeys[i]].collectibleHash !== undefined
-      ) {
-        itemNameList.push(manifest[manifestKeys[i]].collectibleHash)
-      }
-    }
-
-    return itemNameList
+    return legitmateUnownedModInfo
   }
 
-  /**
-   * Compile list of names for collectibles on sale
-   */
-  private getCollectibleNames (itemList: Object, manifest: any): string[] {
-    const itemNameList = []
-    const itemListKeys = Object.keys(itemList)
-    const manifestKeys = Object.keys(manifest)
+  private async getDestinyInventoryModDescriptions (): Promise<Map<string, string>> {
+    const destinyInventoryItemDefinition = await this.destinyApiClient.getDestinyInventoryItemDefinition()
+    const filteredInventory = Object.values(destinyInventoryItemDefinition).filter((item: Partial<Mod>) => {
+      return (JSON.stringify(item.itemType) === '19') &&
+      (Boolean(Object.prototype.hasOwnProperty.call(item, 'hash')))
+    })
+    const destinyInventoryMods: Mod[] = Object.values(filteredInventory).map((
+      { displayProperties, itemType, hash }: any
+    ) => (
+      new Mod(hash, displayProperties.name, itemType)
+    ))
 
-    for (let i = 0; i < manifestKeys.length; i++) {
-      for (let j = 0; j < itemListKeys.length; j++) {
-        if (manifestKeys[i] === itemListKeys[j]) {
-          itemNameList.push(manifest[manifestKeys[i]].displayProperties.name)
-        }
-      }
-    }
+    const modsWithDetails = new Map(destinyInventoryMods.map(mod => [mod.itemHash, mod.displayPropertyName]))
 
-    return itemNameList
-  }
-
-  /**
-   * Check whether an item from the manifest is for sale or not
-   */
-  private canManifestItemBeAdded (
-    itemType: number,
-    itemHashList: string[],
-    manifest: any,
-    manifestKeys: string[],
-    index: number,
-    itemNameList: string[]
-  ): boolean {
-    return itemHashList.includes(manifest[manifestKeys[index]].hash) &&
-      manifest[manifestKeys[index]].itemType === itemType &&
-      !itemNameList.includes(manifest[manifestKeys[index]].collectibleHash)
+    return modsWithDetails
   }
 }

@@ -4,23 +4,20 @@ import { DestinyService } from '../services/destiny-service'
 import { ManifestService } from '../services/manifest-service'
 import { Vendor } from './vendor'
 import { DestinyApiClient } from './destiny-api-client'
-import logger from '../utility/logger'
 import { AxiosHttpClient } from '../utility/axios-http-client'
-import { AccessTokenInfo } from '../services/models/access-token-info'
 import { DESTINY_API_CLIENT_CONFIG } from '../config/config'
+import { Mod } from '../services/models/mod'
 
 jest.mock('./../utility/url', () => {
   return 'example'
 })
 
 describe('<Vendor/>', () => {
-  const destinyService = new DestinyService(new DestinyApiClient(new AxiosHttpClient(), DESTINY_API_CLIENT_CONFIG))
-  const userRepo = new MongoUserRepository()
-  const manifestService = new ManifestService(
-    new DestinyService(new DestinyApiClient(new AxiosHttpClient(), DESTINY_API_CLIENT_CONFIG))
-  )
-  const vendor = new Vendor(destinyService, userRepo, manifestService)
-  let user = {
+  const destinyApiClient = new DestinyApiClient(new AxiosHttpClient(), new MongoUserRepository(), DESTINY_API_CLIENT_CONFIG)
+  const manifestService = new ManifestService(destinyApiClient)
+  const destinyService = new DestinyService(destinyApiClient)
+  const vendor = new Vendor(destinyService, manifestService)
+  const user = {
     bungieUsername: 'name',
     bungieUsernameCode: 'code',
     discordId: 'discordId',
@@ -41,45 +38,23 @@ describe('<Vendor/>', () => {
   })
 
   it('should collect all the mods for sale by Ada-1', async () => {
-    const bungieMembershipId = '1323'
-    const refreshTokenExpirationTime = '3212341'
-    const refreshToken = '888'
-    const accessToken = '000'
-    const tokenInfo = new AccessTokenInfo(bungieMembershipId, refreshTokenExpirationTime, refreshToken, accessToken)
-    const expectedSaleItem = { saleItems: { item1: 'item1' } }
-    const vendorInventory = { 350061650: expectedSaleItem, 456: { saleItems: { item2: 'item2' } } }
-    const expectedCollectible = 'testing'
-    const expectedManifestItem = [expectedCollectible]
-    const expectedCollectibleList = ['item', 'anotherItem']
-    const collectibleInfo = { testing: { state: 65 } }
-    const getDestinyCollectibleInfoMock = jest.spyOn(destinyService, 'getDestinyCollectibleInfo').mockResolvedValue(collectibleInfo)
-    const getAccessTokenMock = jest.spyOn(destinyService, 'getAccessToken').mockResolvedValue(tokenInfo)
-    const updateUserByMembershipIdMock = jest.spyOn(userRepo, 'updateUserByMembershipId').mockResolvedValue()
-    const getDestinyVendorInfoMock = jest.spyOn(destinyService, 'getDestinyVendorInfo').mockResolvedValue(vendorInventory)
-    const getItemFromManifestMock = jest.spyOn(manifestService, 'getItemsFromManifest').mockResolvedValue(expectedManifestItem)
-    const getCollectibleFromManifestMock = jest.spyOn(manifestService, 'getCollectiblesFromManifest').mockResolvedValue(expectedCollectibleList)
+    const modHash1 = '123'
+    const modName1 = 'Boots of Flying'
+    const modHash2 = '456'
+    const modName2 = 'Helmet of Forseeing'
+    const expectedCollectibleList = [modName1, modName2]
+    const unownedMods = [modHash1, modHash2]
+    const adaMerchandise = [new Mod(modHash1), new Mod(modHash2)]
+    const adaMerchandiseInfo = [new Mod('321', modName1), new Mod('654', modName2)]
+    const getUnownedModsMock = jest.spyOn(destinyService, 'getUnownedMods').mockResolvedValue(unownedMods)
+    const getAdaMerchandiseMock = jest.spyOn(destinyService, 'getAdaMerchandise').mockResolvedValue(adaMerchandise)
+    const manifestServiceMock = jest.spyOn(manifestService, 'getModInfoFromManifest').mockResolvedValue(adaMerchandiseInfo)
 
-    const result = await vendor.getCollectiblesForSaleByAda(user)
+    const result = await vendor.getUnownedModsForSaleByAda(user)
 
-    expect(getDestinyCollectibleInfoMock).toBeCalledWith(user.destinyId)
-    expect(getAccessTokenMock).toBeCalledWith(user.refreshToken)
-    expect(updateUserByMembershipIdMock).toBeCalledWith(bungieMembershipId, refreshTokenExpirationTime, refreshToken)
-    expect(getDestinyVendorInfoMock).toBeCalledWith(user, accessToken)
-    expect(getItemFromManifestMock).toBeCalledWith(19, expectedSaleItem.saleItems)
-    expect(getCollectibleFromManifestMock).toBeCalledWith(19, [expectedCollectible])
+    expect(getUnownedModsMock).toHaveBeenCalledWith(user.destinyId)
+    expect(getAdaMerchandiseMock).toHaveBeenCalledWith(user)
+    expect(manifestServiceMock).toHaveBeenCalledWith(adaMerchandise)
     expect(result).toEqual(expectedCollectibleList)
-  })
-
-  it('should throw an error when the access token is undefined before calling getItemFromManifest()', async () => {
-    const tokenInfo = new AccessTokenInfo('bungieMembershipId', 'refreshTokenExpirationTime', 'refreshToken', 'accessToken')
-    jest.spyOn(destinyService, 'getDestinyCollectibleInfo').mockResolvedValue({})
-    jest.spyOn(destinyService, 'getAccessToken').mockResolvedValue(tokenInfo)
-    user = {
-      ...user,
-      refreshToken: ''
-    } as unknown as UserInterface
-    logger.error = jest.fn()
-
-    await expect(async () => vendor.getCollectiblesForSaleByAda(user)).rejects.toThrow(Error)
   })
 })

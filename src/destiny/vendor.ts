@@ -2,33 +2,24 @@ import logger from '../utility/logger.js'
 import { ManifestService } from '../services/manifest-service.js'
 import { DestinyService } from '../services/destiny-service.js'
 import { UserInterface } from '../database/models/user.js'
-import { UserRepository } from '../database/user-repository.js'
+import { Mod } from '../services/models/mod.js'
 
 export class Vendor {
   constructor (
     private readonly destinyService: DestinyService,
-    private readonly database: UserRepository,
     private readonly manifestService: ManifestService
   ) { }
 
   /**
-   * Collect mods for sale by Ada-1
+   * Collect mods for sale by Ada-1 that are not owned by the user
    */
-  async getCollectiblesForSaleByAda (user: UserInterface): Promise<string[]> {
-    const adaVendorId = '350061650'
-    const collectibleId = 65
-    const collectibleList: string[] = []
-
+  async getUnownedModsForSaleByAda (user: UserInterface): Promise<string[]> {
     try {
-      const vendorModInventory = await this.getVendorModInventory(user, adaVendorId)
-      const collectibleInfo = await this.destinyService.getDestinyCollectibleInfo(user.destinyId)
+      const unownedMods = await this.destinyService.getUnownedMods(user.destinyId)
+      const modsForSaleByAda = await this.getModsForSaleByAda(user)
+      const unownedModsForSaleByAda = modsForSaleByAda.filter(mod => !unownedMods.includes(mod.itemHash))
 
-      vendorModInventory.forEach(mod => {
-        if (collectibleInfo[mod].state === collectibleId) {
-          collectibleList.push(mod)
-        }
-      })
-      return await this.manifestService.getCollectiblesFromManifest(19, collectibleList)
+      return unownedModsForSaleByAda.map(mod => mod.displayPropertyName)
     } catch (error) {
       logger.error(error)
       throw new Error('Problem with retreiving the collectibles for sale from Ada')
@@ -36,27 +27,13 @@ export class Vendor {
   }
 
   /**
-   * Collect mods for a specific vendor
+   * Collect mod info of merchandise for sale by Ada
    */
-  private async getVendorModInventory (user: UserInterface, vendorId: string): Promise<string[]> {
-    const tokenInfo = await this.destinyService.getAccessToken(user.refreshToken)
+  private async getModsForSaleByAda (user: UserInterface): Promise<Mod[]> {
     try {
-      await this.database.updateUserByMembershipId(
-        tokenInfo.bungieMembershipId,
-        tokenInfo.refreshTokenExpirationTime,
-        tokenInfo.refreshToken
-      )
-      let vendorInventory
+      const adaMerchandise = await this.destinyService.getAdaMerchandise(user)
 
-      const vendorInfo = await this.destinyService.getDestinyVendorInfo(user, tokenInfo.accessToken)
-
-      for (const key in vendorInfo) {
-        if (key === vendorId) {
-          vendorInventory = vendorInfo[key].saleItems
-        }
-      }
-
-      return await this.manifestService.getItemsFromManifest(19, vendorInventory)
+      return await this.manifestService.getModInfoFromManifest(adaMerchandise)
     } catch (error) {
       logger.error(error)
       throw new Error('Problem with retreiving vendor mod inventory')
