@@ -1,6 +1,6 @@
 import logger from '../utility/logger.js'
 import { UserRepository } from './user-repository.js'
-import { User, UserInterface } from './models/user.js'
+import { User } from './models/user.js'
 
 export class MongoUserRepository implements UserRepository {
   /**
@@ -24,18 +24,6 @@ export class MongoUserRepository implements UserRepository {
     } catch (error) {
       logger.error(error)
       throw new Error(`The record for ${bungieMembershipId}, could not be updated`)
-    }
-  }
-
-  /**
-   * Returns a list of all users subscribed to be alerted
-   */
-  async fetchAllUsers (): Promise<UserInterface[]> {
-    try {
-      return await User.find()
-    } catch (error) {
-      logger.error(error)
-      throw new Error('Could not retreive all users from the database')
     }
   }
 

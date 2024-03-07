@@ -45,41 +45,4 @@ describe('<MongoUserRepository/>', () => {
       async () => mongoUserRepo.updateUserByMembershipId(bungieUsername, '', '')
     ).rejects.toThrow(`The record for ${bungieUsername}, could not be updated`)
   })
-
-  it('should return a list of users that are subscribed to be alerted', async () => {
-    const expectedUsers = [
-      new User({
-        bungieUsername: 'string',
-        bungieUsernameCode: 'string',
-        discordId: 'string',
-        discordChannelId: 'string',
-        destinyId: 'string',
-        destinyCharacterId: 'string',
-        refreshExpiration: 'string',
-        refreshToken: 'string'
-      }),
-      new User({
-        bungieUsername: 'string1',
-        bungieUsernameCode: 'string1',
-        discordId: 'string1',
-        discordChannelId: 'string1',
-        destinyId: 'string1',
-        destinyCharacterId: 'string1',
-        refreshExpiration: 'string1',
-        refreshToken: 'string1'
-      })
-    ]
-    User.find = jest.fn().mockResolvedValue(expectedUsers)
-
-    const result = await mongoUserRepo.fetchAllUsers()
-
-    expect(User.find).toBeCalled()
-    expect(result).toEqual(expectedUsers)
-  })
-
-  it('should catch an error in fetchAllUsers if one occurs when making the find call', async () => {
-    User.find = jest.fn().mockRejectedValue(Error)
-
-    await expect(async () => mongoUserRepo.fetchAllUsers()).rejects.toThrow(Error)
-  })
 })
