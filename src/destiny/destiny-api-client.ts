@@ -47,7 +47,7 @@ export class DestinyApiClient {
 
   async getVendorInfo (destinyId: string, destinyCharacterId: string, refreshToken: string): Promise<any> {
     const getVendorSalesComponent = 402
-    const tokenInfo = await this.getAccessToken(refreshToken)
+    const tokenInfo = await this.getAccessTokenInfo(refreshToken)
 
     await this.database.updateUserByMembershipId(
       tokenInfo.bungieMembershipId,
@@ -100,7 +100,7 @@ export class DestinyApiClient {
     expirationDate.setDate(expirationDate.getDate() - 1)
 
     if (currentDate.getTime() > expirationDate.getTime()) {
-      const tokenInfo = await this.getAccessToken(
+      const tokenInfo = await this.getAccessTokenInfo(
         user.refreshToken
       )
       await this.database.updateUserByMembershipId(
@@ -114,20 +114,9 @@ export class DestinyApiClient {
   /**
      * Retrieve the user's access token by calling the Destiny API with their refresh token
      */
-  private async getAccessToken (refreshToken: string): Promise<TokenInfo> {
-    const { data } = await this.getAccessTokenInfo(refreshToken)
-
-    return new TokenInfo(
-      data.membership_id,
-      data.refresh_expires_in,
-      data.refresh_token,
-      data.access_token
-    )
-  }
-
-  private async getAccessTokenInfo (refreshToken: string): Promise<any> {
+  private async getAccessTokenInfo (refreshToken: string): Promise<TokenInfo> {
     try {
-      return await this.httpClient.post(
+      const response = await this.httpClient.post(
         this.bungieDomainWithTokenDirectory, {
           grant_type: 'refresh_token',
           refresh_token: refreshToken,
@@ -136,6 +125,13 @@ export class DestinyApiClient {
         }, {
           headers: this.urlEncodedHeaders
         })
+
+      return new TokenInfo(
+        response.data.membership_id,
+        response.data.refresh_expires_in,
+        response.data.refresh_token,
+        response.data.access_token
+      )
     } catch (error) {
       logger.error(error)
       throw new Error('Could not retreive access token information')
