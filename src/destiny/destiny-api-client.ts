@@ -4,6 +4,7 @@ import { DestinyApiClientConfig } from './config/destiny-api-client-config.js'
 import { UserInterface } from '../database/models/user.js'
 import { UserRepository } from '../database/user-repository.js'
 import { TokenInfo } from '../services/models/token-info.js'
+import { Mod } from '../services/models/mod.js'
 
 export class DestinyApiClient {
   private readonly apiKeyHeader
@@ -25,16 +26,18 @@ export class DestinyApiClient {
     }
   }
 
-  async getDestinyInventoryItemDefinition (): Promise<any> {
+  async getDestinyInventoryItemDefinition (): Promise<Map<string, string>> {
     try {
       const { data } = await this.httpClient.get(
         this.bungieDomainWithDestinyDirectory + 'manifest/', {
           headers: this.apiKeyHeader
         })
       const manifestFileName: string = data.Response.jsonWorldContentPaths.en
+
       try {
         const response = await this.httpClient.get(this.bungieDomain + manifestFileName)
-        return response.data.DestinyInventoryItemDefinition
+
+        return this.getDestinyInventoryModDescriptions(response.data.DestinyInventoryItemDefinition)
       } catch (error) {
         logger.error(error)
         throw new Error('Could not retreive Destiny inventory item definition')
@@ -100,15 +103,30 @@ export class DestinyApiClient {
     expirationDate.setDate(expirationDate.getDate() - 1)
 
     if (currentDate.getTime() > expirationDate.getTime()) {
-      const tokenInfo = await this.getAccessTokenInfo(
-        user.refreshToken
-      )
+      const tokenInfo = await this.getAccessTokenInfo(user.refreshToken)
       await this.database.updateUserByMembershipId(
         tokenInfo.bungieMembershipId,
         tokenInfo.refreshTokenExpirationTime,
         tokenInfo.refreshToken
       )
     }
+  }
+
+  private getDestinyInventoryModDescriptions (
+    destinyInventoryItemDefinition: { [s: string]: unknown } | ArrayLike<unknown>
+  ): Map<string, string> {
+    const filteredInventory = Object.values(destinyInventoryItemDefinition).filter((item: Partial<Mod>) => {
+      return (JSON.stringify(item.itemType) === '19') &&
+      (Boolean(Object.prototype.hasOwnProperty.call(item, 'hash')))
+    })
+
+    const destinyInventoryMods: Mod[] = Object.values(filteredInventory).map((
+      { displayProperties, itemType, hash }: any
+    ) => (
+      new Mod(hash, displayProperties.name, itemType)
+    ))
+
+    return new Map(destinyInventoryMods.map(mod => [mod.itemHash, mod.displayPropertyName]))
   }
 
   /**

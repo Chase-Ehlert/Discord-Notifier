@@ -18,6 +18,8 @@ describe('<DestinyApiClient/>', () => {
 
   it('should retrieve a list of definitions for Destiny items from a specific manifest file', async () => {
     const expectedManifestFileName = 'manifest'
+    const itemHash = '0132'
+    const itemName = 'Sunglasses of Dudeness'
     const manifest = {
       data: {
         Response: {
@@ -30,10 +32,19 @@ describe('<DestinyApiClient/>', () => {
     const itemDefinition = {
       data: {
         DestinyInventoryItemDefinition: {
-          item1: 'definition'
+          987: {
+            itemType: 19,
+            hash: itemHash,
+            displayProperties: {
+              name: itemName
+            }
+          }
         }
       }
     }
+    const expectedItemDefinitions = new Map()
+    expectedItemDefinitions.set(itemHash, itemName)
+
     axiosHttpClient.get = jest.fn().mockImplementation(async (url): Promise<any> => {
       switch (url) {
         case 'https://www.bungie.net/platform/destiny2/manifest/':
@@ -47,7 +58,7 @@ describe('<DestinyApiClient/>', () => {
 
     expect(axiosHttpClient.get).toHaveBeenCalledWith('https://www.bungie.net/manifest')
     expect(axiosHttpClient.get).toHaveBeenCalledWith(`https://www.bungie.net/${expectedManifestFileName}`)
-    expect(value).toEqual(itemDefinition.data.DestinyInventoryItemDefinition)
+    expect(value).toEqual(expectedItemDefinitions)
   })
 
   it('should catch an error in getDestinyInventoryItemDefinition if one occurs when making the first http call', async () => {
