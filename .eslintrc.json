@@ -19,6 +19,7 @@
     "@typescript-eslint/no-invalid-void-type": 0,
     "no-return-await": "off",
     "@typescript-eslint/return-await": ["error", "in-try-catch"],
-    "@typescript-eslint/semi": "off"
+    "@typescript-eslint/semi": "off",
+    "@typescript-eslint/require-await": "error"
   }
 }

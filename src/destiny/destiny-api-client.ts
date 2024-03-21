@@ -73,7 +73,7 @@ export class DestinyApiClient {
           }
         })
 
-      return await this.getAdaMerchandise(data.Response.sales.data)
+      return this.getAdaMerchandise(data.Response.sales.data)
     } catch (error) {
       logger.error(error)
       throw new Error('Could not retreive Destiny vendor information')
@@ -92,7 +92,7 @@ export class DestinyApiClient {
           headers: this.apiKeyHeader
         })
 
-      return await this.getUnownedMods(data.Response.profileCollectibles.data.collectibles)
+      return this.getUnownedMods(data.Response.profileCollectibles.data.collectibles)
     } catch (error) {
       logger.error(error)
       throw new Error('Could not retreive Destiny collectible information')
@@ -120,7 +120,7 @@ export class DestinyApiClient {
   /**
      * Retrieves the merchandise sold by Ada
      */
-  private async getAdaMerchandise (vendorMerchandise: { [x: string]: { saleItems: any } }): Promise<Mod[]> {
+  private getAdaMerchandise (vendorMerchandise: { [x: string]: { saleItems: any } }): Mod[] {
     let adaMerchandise
     const adaVendorId = '350061650'
 
@@ -180,7 +180,7 @@ export class DestinyApiClient {
   /**
      * Retrieves the list of unowned mods for a user
      */
-  private async getUnownedMods (collectibleData: ArrayLike<unknown> | { [s: string]: unknown }): Promise<String[]> {
+  private getUnownedMods (collectibleData: ArrayLike<unknown> | { [s: string]: unknown }): String[] {
     const unownedModStateId = 65
     const collectibles = Object.entries(collectibleData).map(([id, value]: [string, {state: number}]) => new Collectible(id, value.state))
     const collectibleMods = collectibles.filter(mod => mod.state === unownedModStateId)
