@@ -19,6 +19,7 @@ describe('<DiscordService/>', () => {
   )
   const vendor = new Vendor(
     new DestinyService(destinyApiClient),
+    destinyApiClient,
     new ManifestService(destinyApiClient)
   )
   const discordService = new DiscordService(vendor, new AxiosHttpClient(), DISCORD_CONFIG)

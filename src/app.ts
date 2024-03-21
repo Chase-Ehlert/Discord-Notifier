@@ -17,7 +17,7 @@ const destinyApiClient = new DestinyApiClient(
 )
 const mongoDbService = new MongoDbService(MONGO_DB_SERVICE_CONFIG)
 const discordService = new DiscordService(
-  new Vendor(new DestinyService(destinyApiClient), new ManifestService(destinyApiClient)),
+  new Vendor(new DestinyService(destinyApiClient), destinyApiClient, new ManifestService(destinyApiClient)),
   new AxiosHttpClient(),
   DISCORD_CONFIG
 )

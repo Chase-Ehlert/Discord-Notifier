@@ -48,7 +48,7 @@ export class DestinyApiClient {
     }
   }
 
-  async getVendorInfo (destinyId: string, destinyCharacterId: string, refreshToken: string): Promise<any> {
+  async getVendorInfo (destinyId: string, destinyCharacterId: string, refreshToken: string): Promise<Mod[]> {
     const getVendorSalesComponent = 402
     const tokenInfo = await this.getAccessTokenInfo(refreshToken)
 
@@ -59,7 +59,7 @@ export class DestinyApiClient {
     )
 
     try {
-      return await this.httpClient.get(
+      const { data } = await this.httpClient.get(
         this.bungieDomainWithDestinyDirectory +
         this.profileDirectory +
         `${destinyId}/Character/${destinyCharacterId}/Vendors/`, {
@@ -71,6 +71,8 @@ export class DestinyApiClient {
             'x-api-key': this.config.apiKey
           }
         })
+
+      return await this.getAdaMerchandise(data.Response.sales.data)
     } catch (error) {
       logger.error(error)
       throw new Error('Could not retreive Destiny vendor information')
@@ -110,6 +112,22 @@ export class DestinyApiClient {
         tokenInfo.refreshToken
       )
     }
+  }
+
+  /**
+     * Retrieves the merchandise sold by Ada
+     */
+  private async getAdaMerchandise (vendorMerchandise: { [x: string]: { saleItems: any } }): Promise<Mod[]> {
+    let adaMerchandise
+    const adaVendorId = '350061650'
+
+    for (const vendorId in vendorMerchandise) {
+      if (vendorId === adaVendorId) {
+        adaMerchandise = vendorMerchandise[vendorId].saleItems
+      }
+    }
+
+    return Object.values(adaMerchandise).map((item: Mod) => (new Mod(item.itemHash)))
   }
 
   private getDestinyInventoryModDescriptions (

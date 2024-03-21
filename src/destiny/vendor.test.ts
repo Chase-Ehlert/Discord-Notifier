@@ -16,7 +16,7 @@ describe('<Vendor/>', () => {
   const destinyApiClient = new DestinyApiClient(new AxiosHttpClient(), new MongoUserRepository(), DESTINY_API_CLIENT_CONFIG)
   const manifestService = new ManifestService(destinyApiClient)
   const destinyService = new DestinyService(destinyApiClient)
-  const vendor = new Vendor(destinyService, manifestService)
+  const vendor = new Vendor(destinyService, destinyApiClient, manifestService)
   const user = {
     bungieUsername: 'name',
     bungieUsernameCode: 'code',
@@ -47,13 +47,13 @@ describe('<Vendor/>', () => {
     const adaMerchandise = [new Mod(modHash1), new Mod(modHash2)]
     const adaMerchandiseInfo = [new Mod('321', modName1), new Mod('654', modName2)]
     const getUnownedModsMock = jest.spyOn(destinyService, 'getUnownedMods').mockResolvedValue(unownedMods)
-    const getAdaMerchandiseMock = jest.spyOn(destinyService, 'getAdaMerchandise').mockResolvedValue(adaMerchandise)
+    const getVendorInfoMock = jest.spyOn(destinyApiClient, 'getVendorInfo').mockResolvedValue(adaMerchandise)
     const manifestServiceMock = jest.spyOn(manifestService, 'getModInfoFromManifest').mockResolvedValue(adaMerchandiseInfo)
 
     const result = await vendor.getUnownedModsForSaleByAda(user)
 
     expect(getUnownedModsMock).toHaveBeenCalledWith(user.destinyId)
-    expect(getAdaMerchandiseMock).toHaveBeenCalledWith(user)
+    expect(getVendorInfoMock).toHaveBeenCalledWith(user.destinyId, user.destinyCharacterId, user.refreshToken)
     expect(manifestServiceMock).toHaveBeenCalledWith(adaMerchandise)
     expect(result).toEqual(expectedCollectibleList)
   })

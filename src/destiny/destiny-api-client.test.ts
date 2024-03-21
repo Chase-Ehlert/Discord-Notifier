@@ -3,6 +3,7 @@ import { UserInterface } from '../database/models/user'
 import { AxiosHttpClient } from '../utility/axios-http-client'
 import { DESTINY_API_CLIENT_CONFIG } from '../config/config'
 import { MongoUserRepository } from '../database/mongo-user-repository'
+import { Mod } from '../services/models/mod'
 
 jest.mock('./../utility/logger', () => {
   return {
@@ -98,6 +99,24 @@ describe('<DestinyApiClient/>', () => {
     const expectedMembershipId = '123'
     const expectedRefreshExpiration = '456'
     const expectedRefreshToken = '789'
+    const mod1ItemHash = '123'
+    const mod2ItemHash = '456'
+    const mod1 = new Mod(mod1ItemHash)
+    const mod2 = new Mod(mod2ItemHash)
+    const adaMerchandise = { 350061650: { saleItems: { 1: { itemHash: mod1ItemHash }, 2: { itemHash: mod2ItemHash } } } }
+    const result = {
+      data: {
+        Response: { sales: { data: adaMerchandise } }
+      }
+    }
+    const response = {
+      data: {
+        membership_id: expectedMembershipId,
+        refresh_expires_in: expectedRefreshExpiration,
+        refresh_token: expectedRefreshToken,
+        access_token: accessToken
+      }
+    }
     const user = {
       bungieUsername: 'name',
       bungieUsernameCode: 'code',
@@ -109,19 +128,7 @@ describe('<DestinyApiClient/>', () => {
       refreshExpiration: 'expiration',
       refreshToken: 'token'
     } as unknown as UserInterface
-    const result = {
-      data: {
-        Response: { sales: { data: { vendor: 'info' } } }
-      }
-    }
-    const response = {
-      data: {
-        membership_id: expectedMembershipId,
-        refresh_expires_in: expectedRefreshExpiration,
-        refresh_token: expectedRefreshToken,
-        access_token: accessToken
-      }
-    }
+
     axiosHttpClient.get = jest.fn().mockResolvedValue(result)
     axiosHttpClient.post = jest.fn().mockResolvedValue(response)
     jest.spyOn(mongoUserRepository, 'updateUserByMembershipId').mockResolvedValue()
@@ -140,7 +147,7 @@ describe('<DestinyApiClient/>', () => {
         }
       }
     )
-    expect(value).toEqual(result)
+    expect(value).toEqual([mod1, mod2])
   })
 
   it('should catch an error in getDestinyVendorInfo if one occurs when making a http call', async () => {
