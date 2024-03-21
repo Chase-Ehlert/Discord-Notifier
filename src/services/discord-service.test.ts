@@ -1,6 +1,5 @@
 import { DiscordService } from './discord-service'
 import { Vendor } from '../destiny/vendor'
-import { DestinyService } from './destiny-service'
 import { MongoUserRepository } from '../database/mongo-user-repository'
 import { ManifestService } from './manifest-service'
 import { DestinyApiClient } from '../destiny/destiny-api-client'
@@ -18,7 +17,7 @@ describe('<DiscordService/>', () => {
     DESTINY_API_CLIENT_CONFIG
   )
   const vendor = new Vendor(
-    new DestinyService(destinyApiClient),
+    destinyApiClient,
     new ManifestService(destinyApiClient)
   )
   const discordService = new DiscordService(vendor, new AxiosHttpClient(), DISCORD_CONFIG)

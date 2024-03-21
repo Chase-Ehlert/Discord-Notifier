@@ -4,6 +4,8 @@ import { DestinyApiClientConfig } from './config/destiny-api-client-config.js'
 import { UserInterface } from '../database/models/user.js'
 import { UserRepository } from '../database/user-repository.js'
 import { TokenInfo } from '../services/models/token-info.js'
+import { Mod } from '../services/models/mod.js'
+import { Collectible } from '../services/models/collectible.js'
 
 export class DestinyApiClient {
   private readonly apiKeyHeader
@@ -25,16 +27,18 @@ export class DestinyApiClient {
     }
   }
 
-  async getDestinyInventoryItemDefinition (): Promise<any> {
+  async getDestinyInventoryItemDefinition (): Promise<Map<string, string>> {
     try {
       const { data } = await this.httpClient.get(
         this.bungieDomainWithDestinyDirectory + 'manifest/', {
           headers: this.apiKeyHeader
         })
       const manifestFileName: string = data.Response.jsonWorldContentPaths.en
+
       try {
         const response = await this.httpClient.get(this.bungieDomain + manifestFileName)
-        return response.data.DestinyInventoryItemDefinition
+
+        return this.getDestinyInventoryModDescriptions(response.data.DestinyInventoryItemDefinition)
       } catch (error) {
         logger.error(error)
         throw new Error('Could not retreive Destiny inventory item definition')
@@ -45,9 +49,9 @@ export class DestinyApiClient {
     }
   }
 
-  async getVendorInfo (destinyId: string, destinyCharacterId: string, refreshToken: string): Promise<any> {
+  async getVendorInfo (destinyId: string, destinyCharacterId: string, refreshToken: string): Promise<Mod[]> {
     const getVendorSalesComponent = 402
-    const tokenInfo = await this.getAccessToken(refreshToken)
+    const tokenInfo = await this.getAccessTokenInfo(refreshToken)
 
     await this.database.updateUserByMembershipId(
       tokenInfo.bungieMembershipId,
@@ -56,7 +60,7 @@ export class DestinyApiClient {
     )
 
     try {
-      return await this.httpClient.get(
+      const { data } = await this.httpClient.get(
         this.bungieDomainWithDestinyDirectory +
         this.profileDirectory +
         `${destinyId}/Character/${destinyCharacterId}/Vendors/`, {
@@ -68,23 +72,27 @@ export class DestinyApiClient {
             'x-api-key': this.config.apiKey
           }
         })
+
+      return this.getAdaMerchandise(data.Response.sales.data)
     } catch (error) {
       logger.error(error)
       throw new Error('Could not retreive Destiny vendor information')
     }
   }
 
-  async getCollectibleInfo (destinyId: string): Promise<any> {
+  async getCollectibleInfo (destinyId: string): Promise<String []> {
     const getCollectiblesComponent = 800
 
     try {
-      return await this.httpClient.get(
+      const { data } = await this.httpClient.get(
         this.bungieDomainWithDestinyDirectory + this.profileDirectory + `${destinyId}/`, {
           params: {
             components: getCollectiblesComponent
           },
           headers: this.apiKeyHeader
         })
+
+      return this.getUnownedMods(data.Response.profileCollectibles.data.collectibles)
     } catch (error) {
       logger.error(error)
       throw new Error('Could not retreive Destiny collectible information')
@@ -100,9 +108,7 @@ export class DestinyApiClient {
     expirationDate.setDate(expirationDate.getDate() - 1)
 
     if (currentDate.getTime() > expirationDate.getTime()) {
-      const tokenInfo = await this.getAccessToken(
-        user.refreshToken
-      )
+      const tokenInfo = await this.getAccessTokenInfo(user.refreshToken)
       await this.database.updateUserByMembershipId(
         tokenInfo.bungieMembershipId,
         tokenInfo.refreshTokenExpirationTime,
@@ -112,22 +118,44 @@ export class DestinyApiClient {
   }
 
   /**
-     * Retrieve the user's access token by calling the Destiny API with their refresh token
+     * Retrieves the merchandise sold by Ada
      */
-  private async getAccessToken (refreshToken: string): Promise<TokenInfo> {
-    const { data } = await this.getAccessTokenInfo(refreshToken)
+  private getAdaMerchandise (vendorMerchandise: { [x: string]: { saleItems: any } }): Mod[] {
+    let adaMerchandise
+    const adaVendorId = '350061650'
 
-    return new TokenInfo(
-      data.membership_id,
-      data.refresh_expires_in,
-      data.refresh_token,
-      data.access_token
-    )
+    for (const vendorId in vendorMerchandise) {
+      if (vendorId === adaVendorId) {
+        adaMerchandise = vendorMerchandise[vendorId].saleItems
+      }
+    }
+
+    return Object.values(adaMerchandise).map((item: Mod) => (new Mod(item.itemHash)))
   }
 
-  private async getAccessTokenInfo (refreshToken: string): Promise<any> {
+  private getDestinyInventoryModDescriptions (
+    destinyInventoryItemDefinition: { [s: string]: unknown } | ArrayLike<unknown>
+  ): Map<string, string> {
+    const filteredInventory = Object.values(destinyInventoryItemDefinition).filter((item: Partial<Mod>) => {
+      return (JSON.stringify(item.itemType) === '19') &&
+      (Boolean(Object.prototype.hasOwnProperty.call(item, 'hash')))
+    })
+
+    const destinyInventoryMods: Mod[] = Object.values(filteredInventory).map((
+      { displayProperties, itemType, hash }: any
+    ) => (
+      new Mod(hash, displayProperties.name, itemType)
+    ))
+
+    return new Map(destinyInventoryMods.map(mod => [mod.itemHash, mod.displayPropertyName]))
+  }
+
+  /**
+     * Retrieve the user's access token by calling the Destiny API with their refresh token
+     */
+  private async getAccessTokenInfo (refreshToken: string): Promise<TokenInfo> {
     try {
-      return await this.httpClient.post(
+      const response = await this.httpClient.post(
         this.bungieDomainWithTokenDirectory, {
           grant_type: 'refresh_token',
           refresh_token: refreshToken,
@@ -136,9 +164,27 @@ export class DestinyApiClient {
         }, {
           headers: this.urlEncodedHeaders
         })
+
+      return new TokenInfo(
+        response.data.membership_id,
+        response.data.refresh_expires_in,
+        response.data.refresh_token,
+        response.data.access_token
+      )
     } catch (error) {
       logger.error(error)
       throw new Error('Could not retreive access token information')
     }
+  }
+
+  /**
+     * Retrieves the list of unowned mods for a user
+     */
+  private getUnownedMods (collectibleData: ArrayLike<unknown> | { [s: string]: unknown }): String[] {
+    const unownedModStateId = 65
+    const collectibles = Object.entries(collectibleData).map(([id, value]: [string, {state: number}]) => new Collectible(id, value.state))
+    const collectibleMods = collectibles.filter(mod => mod.state === unownedModStateId)
+
+    return collectibleMods.map(collectible => collectible.id)
   }
 }

@@ -32,10 +32,10 @@ describe('<ManifestService/>', () => {
     const itemHash2 = '321'
     const itemName1 = 'Gloves of Hercules'
     const itemName2 = 'Glasses of Zeron'
-    const expectedManifest = {
-      item1: { hash: itemHash1, itemType: 19, displayProperties: { name: itemName1 } },
-      item2: { hash: itemHash2, itemType: 19, displayProperties: { name: itemName2 } }
-    }
+    const expectedManifest = new Map()
+    expectedManifest.set(itemHash1, itemName1)
+    expectedManifest.set(itemHash2, itemName2)
+
     const getDestinyInventoryItemDefinitionMock =
       jest.spyOn(destinyApiClient, 'getDestinyInventoryItemDefinition').mockResolvedValue(expectedManifest)
     const itemHashes = [new Mod(itemHash1), new Mod(itemHash2)]

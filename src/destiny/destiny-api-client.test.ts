@@ -3,6 +3,7 @@ import { UserInterface } from '../database/models/user'
 import { AxiosHttpClient } from '../utility/axios-http-client'
 import { DESTINY_API_CLIENT_CONFIG } from '../config/config'
 import { MongoUserRepository } from '../database/mongo-user-repository'
+import { Mod } from '../services/models/mod'
 
 jest.mock('./../utility/logger', () => {
   return {
@@ -18,6 +19,8 @@ describe('<DestinyApiClient/>', () => {
 
   it('should retrieve a list of definitions for Destiny items from a specific manifest file', async () => {
     const expectedManifestFileName = 'manifest'
+    const itemHash = '0132'
+    const itemName = 'Sunglasses of Dudeness'
     const manifest = {
       data: {
         Response: {
@@ -30,10 +33,19 @@ describe('<DestinyApiClient/>', () => {
     const itemDefinition = {
       data: {
         DestinyInventoryItemDefinition: {
-          item1: 'definition'
+          987: {
+            itemType: 19,
+            hash: itemHash,
+            displayProperties: {
+              name: itemName
+            }
+          }
         }
       }
     }
+    const expectedItemDefinitions = new Map()
+    expectedItemDefinitions.set(itemHash, itemName)
+
     axiosHttpClient.get = jest.fn().mockImplementation(async (url): Promise<any> => {
       switch (url) {
         case 'https://www.bungie.net/platform/destiny2/manifest/':
@@ -47,7 +59,7 @@ describe('<DestinyApiClient/>', () => {
 
     expect(axiosHttpClient.get).toHaveBeenCalledWith('https://www.bungie.net/manifest')
     expect(axiosHttpClient.get).toHaveBeenCalledWith(`https://www.bungie.net/${expectedManifestFileName}`)
-    expect(value).toEqual(itemDefinition.data.DestinyInventoryItemDefinition)
+    expect(value).toEqual(expectedItemDefinitions)
   })
 
   it('should catch an error in getDestinyInventoryItemDefinition if one occurs when making the first http call', async () => {
@@ -87,6 +99,24 @@ describe('<DestinyApiClient/>', () => {
     const expectedMembershipId = '123'
     const expectedRefreshExpiration = '456'
     const expectedRefreshToken = '789'
+    const mod1ItemHash = '123'
+    const mod2ItemHash = '456'
+    const mod1 = new Mod(mod1ItemHash)
+    const mod2 = new Mod(mod2ItemHash)
+    const adaMerchandise = { 350061650: { saleItems: { 1: { itemHash: mod1ItemHash }, 2: { itemHash: mod2ItemHash } } } }
+    const result = {
+      data: {
+        Response: { sales: { data: adaMerchandise } }
+      }
+    }
+    const response = {
+      data: {
+        membership_id: expectedMembershipId,
+        refresh_expires_in: expectedRefreshExpiration,
+        refresh_token: expectedRefreshToken,
+        access_token: accessToken
+      }
+    }
     const user = {
       bungieUsername: 'name',
       bungieUsernameCode: 'code',
@@ -98,19 +128,7 @@ describe('<DestinyApiClient/>', () => {
       refreshExpiration: 'expiration',
       refreshToken: 'token'
     } as unknown as UserInterface
-    const result = {
-      data: {
-        Response: { sales: { data: { vendor: 'info' } } }
-      }
-    }
-    const response = {
-      data: {
-        membership_id: expectedMembershipId,
-        refresh_expires_in: expectedRefreshExpiration,
-        refresh_token: expectedRefreshToken,
-        access_token: accessToken
-      }
-    }
+
     axiosHttpClient.get = jest.fn().mockResolvedValue(result)
     axiosHttpClient.post = jest.fn().mockResolvedValue(response)
     jest.spyOn(mongoUserRepository, 'updateUserByMembershipId').mockResolvedValue()
@@ -129,7 +147,7 @@ describe('<DestinyApiClient/>', () => {
         }
       }
     )
-    expect(value).toEqual(result)
+    expect(value).toEqual([mod1, mod2])
   })
 
   it('should catch an error in getDestinyVendorInfo if one occurs when making a http call', async () => {
@@ -140,9 +158,10 @@ describe('<DestinyApiClient/>', () => {
 
   it('should retrieve the list of collectibles that exist in Destiny', async () => {
     const destinyId = 'destinyId'
+    const expectedCollectibleName = ['item1']
     const result = {
       data: {
-        Response: { profileCollectibles: { data: { collectibles: { item1: 'name' } } } }
+        Response: { profileCollectibles: { data: { collectibles: { item1: { state: 65 } } } } }
       }
     }
     axiosHttpClient.get = jest.fn().mockResolvedValue(result)
@@ -160,7 +179,7 @@ describe('<DestinyApiClient/>', () => {
         }
       }
     )
-    expect(value).toEqual(result)
+    expect(value).toEqual(expectedCollectibleName)
   })
 
   it('should catch an error in getDestinyCollectibleInfo if one occurs when making a http call', async () => {
