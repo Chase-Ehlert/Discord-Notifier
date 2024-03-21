@@ -158,9 +158,10 @@ describe('<DestinyApiClient/>', () => {
 
   it('should retrieve the list of collectibles that exist in Destiny', async () => {
     const destinyId = 'destinyId'
+    const expectedCollectibleName = ['item1']
     const result = {
       data: {
-        Response: { profileCollectibles: { data: { collectibles: { item1: 'name' } } } }
+        Response: { profileCollectibles: { data: { collectibles: { item1: { state: 65 } } } } }
       }
     }
     axiosHttpClient.get = jest.fn().mockResolvedValue(result)
@@ -178,7 +179,7 @@ describe('<DestinyApiClient/>', () => {
         }
       }
     )
-    expect(value).toEqual(result)
+    expect(value).toEqual(expectedCollectibleName)
   })
 
   it('should catch an error in getDestinyCollectibleInfo if one occurs when making a http call', async () => {

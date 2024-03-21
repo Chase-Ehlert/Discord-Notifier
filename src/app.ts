@@ -2,7 +2,6 @@ import express from 'express'
 import logger from './utility/logger.js'
 import { DiscordService } from './services/discord-service.js'
 import { Vendor } from './destiny/vendor.js'
-import { DestinyService } from './services/destiny-service.js'
 import { AxiosHttpClient } from './utility/axios-http-client.js'
 import { MongoUserRepository } from './database/mongo-user-repository.js'
 import { DESTINY_API_CLIENT_CONFIG, DISCORD_CONFIG, MONGO_DB_SERVICE_CONFIG } from './config/config.js'
@@ -17,7 +16,7 @@ const destinyApiClient = new DestinyApiClient(
 )
 const mongoDbService = new MongoDbService(MONGO_DB_SERVICE_CONFIG)
 const discordService = new DiscordService(
-  new Vendor(new DestinyService(destinyApiClient), destinyApiClient, new ManifestService(destinyApiClient)),
+  new Vendor(destinyApiClient, new ManifestService(destinyApiClient)),
   new AxiosHttpClient(),
   DISCORD_CONFIG
 )

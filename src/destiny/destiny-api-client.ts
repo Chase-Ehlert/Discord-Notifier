@@ -5,6 +5,7 @@ import { UserInterface } from '../database/models/user.js'
 import { UserRepository } from '../database/user-repository.js'
 import { TokenInfo } from '../services/models/token-info.js'
 import { Mod } from '../services/models/mod.js'
+import { Collectible } from '../services/models/collectible.js'
 
 export class DestinyApiClient {
   private readonly apiKeyHeader
@@ -79,17 +80,19 @@ export class DestinyApiClient {
     }
   }
 
-  async getCollectibleInfo (destinyId: string): Promise<any> {
+  async getCollectibleInfo (destinyId: string): Promise<String []> {
     const getCollectiblesComponent = 800
 
     try {
-      return await this.httpClient.get(
+      const { data } = await this.httpClient.get(
         this.bungieDomainWithDestinyDirectory + this.profileDirectory + `${destinyId}/`, {
           params: {
             components: getCollectiblesComponent
           },
           headers: this.apiKeyHeader
         })
+
+      return await this.getUnownedMods(data.Response.profileCollectibles.data.collectibles)
     } catch (error) {
       logger.error(error)
       throw new Error('Could not retreive Destiny collectible information')
@@ -172,5 +175,16 @@ export class DestinyApiClient {
       logger.error(error)
       throw new Error('Could not retreive access token information')
     }
+  }
+
+  /**
+     * Retrieves the list of unowned mods for a user
+     */
+  private async getUnownedMods (collectibleData: ArrayLike<unknown> | { [s: string]: unknown }): Promise<String[]> {
+    const unownedModStateId = 65
+    const collectibles = Object.entries(collectibleData).map(([id, value]: [string, {state: number}]) => new Collectible(id, value.state))
+    const collectibleMods = collectibles.filter(mod => mod.state === unownedModStateId)
+
+    return collectibleMods.map(collectible => collectible.id)
   }
 }
